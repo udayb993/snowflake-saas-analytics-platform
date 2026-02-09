@@ -17,8 +17,9 @@ snowflake-saas-analytics-platform/
 │   │   └── create_warehouse.sql
 │   │
 │   ├── 01_ingestion_setup/
-│   │   ├── create_file_format.sql (CSV format configuration)
-│   │   └── create_stage.sql (External stage for data loading)
+│   │   ├── 00_create_storage_integration.sql (AWS S3 storage integration setup)
+│   │   ├── 01_create_stage.sql (External stage referencing S3 via storage integration)
+│   │   └── 02_create_file_format.sql (CSV format configuration)
 │   │
 │   ├── 02_bronze/
 │   │   ├── create_bronze_tables.sql (Raw data ingestion - 58 columns)
@@ -94,18 +95,19 @@ Run the SQL scripts in the following sequence on Snowflake:
 1. sql/00_database_setup/create_database.sql
 2. sql/00_database_setup/create_schemas.sql
 3. sql/00_database_setup/create_warehouse.sql
-4. sql/01_ingestion_setup/create_file_format.sql
-5. sql/01_ingestion_setup/create_stage.sql
-6. sql/02_bronze/create_bronze_tables.sql
-7. sql/02_bronze/load_bronze_data.sql (requires CSV file in external stage)
-8. sql/03_silver/create_silver_tables.sql
-9. sql/03_silver/transform_bronze_to_silver.sql
-10. sql/04_gold/create_metrics_tables.sql
-11. sql/04_gold/load_business_metrics.sql
-12. sql/05_orchestration/create_streams.sql
-13. sql/05_orchestration/create_tasks.sql
-14. sql/06_governance/masking_policies.sql
-15. sql/06_governance/row_access_policies.sql
+4. sql/01_ingestion_setup/00_create_storage_integration.sql
+5. sql/01_ingestion_setup/01_create_stage.sql
+6. sql/01_ingestion_setup/02_create_file_format.sql
+7. sql/02_bronze/create_bronze_tables.sql
+8. sql/02_bronze/load_bronze_data.sql (requires CSV file uploaded to cloud storage)
+9. sql/03_silver/create_silver_tables.sql
+10. sql/03_silver/transform_bronze_to_silver.sql
+11. sql/04_gold/create_metrics_tables.sql
+12. sql/04_gold/load_business_metrics.sql
+13. sql/05_orchestration/create_streams.sql
+14. sql/05_orchestration/create_tasks.sql
+15. sql/06_governance/masking_policies.sql
+16. sql/06_governance/row_access_policies.sql
 ```
 
 ## Key Features
@@ -119,14 +121,58 @@ Run the SQL scripts in the following sequence on Snowflake:
 
 ## Setup Instructions
 
-1. **Upload Data to Snowflake Stage**
-   ```sql
-   PUT file:///path/to/social_media_part_ad.csv @SAAS_ANALYTICS.BRONZE.RAW_STAGE;
+### Option 1: External Cloud Storage (Recommended for Production)
+
+**Using AWS S3**
+
+1. **Configure Storage Integration**
+   - Open `sql/01_ingestion_setup/00_create_storage_integration.sql`
+   - Update the AWS Account ID and IAM role name with your details
+   - Run the script to create the storage integration
+   - Execute `DESC STORAGE INTEGRATION saas_s3_integration;` and copy the `STORAGE_AWS_EXTERNAL_ID`
+   - Add this External ID to your IAM role's trust policy in AWS
+
+2. **Create External Stage**
+   - Open `sql/01_ingestion_setup/01_create_stage.sql`
+   - Update the S3 bucket path if needed
+   - Run the script to create the stage
+
+3. **Create File Format**
+   - Open `sql/01_ingestion_setup/02_create_file_format.sql`
+   - Run the script
+
+4. **Upload Data to S3**
+   ```bash
+   aws s3 cp data/social_media_part_ad.csv s3://your-bucket/raw/
    ```
 
-2. **Execute SQL Scripts**
+5. **Verify Connection**
+   ```sql
+   LIST @SAAS_ANALYTICS.BRONZE.RAW_STAGE;
+   ```
+
+6. **Execute SQL Scripts**
    - Connect to your Snowflake account
-   - Run scripts in the order specified above using the Snowflake Web UI or SnowSQL CLI
+   - Run scripts in the order specified below using the Snowflake Web UI or SnowSQL CLI
+
+### Option 2: Internal Stage (Development Only)
+
+**Quick local testing without cloud storage**
+
+```sql
+-- Create internal stage
+CREATE OR REPLACE STAGE SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL
+FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
+
+-- Upload from local machine
+PUT file:///path/to/social_media_part_ad.csv @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
+
+-- Load data
+COPY INTO SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW
+FROM @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
+```
+
+⚠️ **Note**: Internal stages are not recommended for production. Use external stages with storage integrations for enterprise deployments.
 
 3. **Verify Installation**
    ```sql
