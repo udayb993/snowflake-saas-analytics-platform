@@ -1,3 +1,5 @@
+USE ROLE SYSADMIN;
+
 CREATE OR REPLACE TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN (
     user_id                      STRING,
     app_name                     STRING,
@@ -60,3 +62,13 @@ CREATE OR REPLACE TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN (
     user_engagement_score        NUMBER,
     load_timestamp               TIMESTAMP
 );
+
+-- ====================================================================================
+-- GRANT PRIVILEGES ON SILVER TABLE
+-- ====================================================================================
+-- Grant read access to analysts and QA roles
+GRANT SELECT ON TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN TO ROLE ANALYST_ROLE;
+GRANT SELECT ON TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN TO ROLE QA_ROLE;
+
+-- Grant all privileges to developers
+GRANT ALL PRIVILEGES ON TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN TO ROLE DEVELOPER_ROLE;

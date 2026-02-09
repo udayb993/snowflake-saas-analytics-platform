@@ -1,3 +1,5 @@
+USE ROLE SYSADMIN;
+
 CREATE TABLE IF NOT EXISTS SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW (
     user_id                      STRING,
     app_name                     STRING,
@@ -60,3 +62,9 @@ CREATE TABLE IF NOT EXISTS SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW (
     source_file_name             STRING,
     load_timestamp               TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 );
+
+-- ====================================================================================
+-- GRANT PRIVILEGES ON BRONZE TABLE
+-- ====================================================================================
+-- Grant appropriate privileges to roles
+GRANT ALL PRIVILEGES ON TABLE SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW TO ROLE DEVELOPER_ROLE;

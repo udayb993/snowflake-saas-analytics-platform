@@ -1,3 +1,5 @@
+USE ROLE SYSADMIN;
+
 -- Query to view top tenant engagement metrics
 SELECT 
     tenant_id,
