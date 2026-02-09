@@ -67,11 +67,10 @@ The dataset contains Instagram user analytics with 58 columns:
 
 ### Data Governance
 1. **Dynamic Data Masking (DDM)**
-   - Sensitive health fields (age, BMI, blood pressure) are masked for non-admin users
-   - ANALYST_ROLE sees "***MASKED***" instead of actual values
-   - ADMIN_ROLE has unrestricted access
+   - Sensitive health fields (age, BMI, blood pressure) are masked based on role
+   - SYSADMIN and ANALYST_ROLE see unmasked values
+   - QA_ROLE and all other roles see "***MASKED***"
 
-2. **Row-Level Security (RLS)**
 2. **Row-Level Security (RLS)**
    - Multi-tenant isolation via TENANT_RLS policy
    - SYSADMIN role (built-in) can see all data
@@ -80,7 +79,8 @@ The dataset contains Instagram user analytics with 58 columns:
    - Flexible role-to-tenant assignment for enterprise scenarios
 
 3. **Custom Roles Created**
-   - ANALYST_ROLE - Limited read-only access with data masking applied
+   - ANALYST_ROLE - Full unmasked read-only access to Silver and Gold data
+   - QA_ROLE - Read-only access with masked sensitive data
    - DEVELOPER_ROLE - Full technical access for ETL/development work
    - SYSADMIN - Built-in role with administrative privileges
 

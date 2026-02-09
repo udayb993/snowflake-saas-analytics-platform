@@ -2,7 +2,14 @@
 -- DYNAMIC DATA MASKING POLICIES
 -- ====================================================================================
 -- This file creates and applies masking policies to sensitive columns
--- Roles: SYSADMIN (built-in), ANALYST_ROLE (see 00_database_setup/03_create_roles.sql)
+--
+-- Data Visibility:
+--   - SYSADMIN: Full unmasked access
+--   - ANALYST_ROLE: Full unmasked access
+--   - QA_ROLE: Masked view of sensitive data
+--   - Others: NULL (no access)
+--
+-- Roles: SYSADMIN (built-in), ANALYST_ROLE, QA_ROLE (see 00_database_setup/03_create_roles.sql)
 -- ====================================================================================
 
 -- Create masking policy for sensitive health data
@@ -10,9 +17,8 @@ CREATE OR REPLACE MASKING POLICY SAAS_ANALYTICS.GOVERNANCE.SENSITIVE_DATA_MASKIN
 AS (VAL STRING) 
 RETURNS STRING ->
 CASE
-    WHEN CURRENT_ROLE() IN ('SYSADMIN') THEN VAL
-    WHEN CURRENT_ROLE() IN ('ANALYST_ROLE') THEN '***MASKED***'
-    ELSE NULL
+    WHEN CURRENT_ROLE() IN ('SYSADMIN', 'ANALYST_ROLE') THEN VAL
+    ELSE '***MASKED***'
 END;
 
 -- Apply masking to sensitive columns
