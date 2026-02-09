@@ -14,7 +14,8 @@ snowflake-saas-analytics-platform/
 │   ├── 00_database_setup/
 │   │   ├── create_database.sql
 │   │   ├── create_schemas.sql (BRONZE, SILVER, GOLD, COMMON, ORCHESTRATION, GOVERNANCE)
-│   │   └── create_warehouse.sql
+│   │   ├── create_warehouse.sql
+│   │   └── 03_create_roles.sql (ADMIN_ROLE, ANALYST_ROLE, DEVELOPER_ROLE with privileges)
 │   │
 │   ├── 01_ingestion_setup/
 │   │   ├── 00_create_storage_integration.sql (AWS S3 storage integration setup)
@@ -71,16 +72,17 @@ The dataset contains Instagram user analytics with 58 columns:
    - ADMIN_ROLE has unrestricted access
 
 2. **Row-Level Security (RLS)**
+2. **Row-Level Security (RLS)**
    - Multi-tenant isolation via TENANT_RLS policy
-   - ADMIN_ROLE can see all data
+   - SYSADMIN role (built-in) can see all data
    - DEVELOPER_ROLE can access all data
    - Tenant-specific roles can be mapped via ROLE_TENANT_MAPPING table
    - Flexible role-to-tenant assignment for enterprise scenarios
 
-3. **Roles Created**
-   - ADMIN_ROLE - Full access to all data
-   - ANALYST_ROLE - Limited access with data masking
-   - DEVELOPER_ROLE - Full technical access for development
+3. **Custom Roles Created**
+   - ANALYST_ROLE - Limited read-only access with data masking applied
+   - DEVELOPER_ROLE - Full technical access for ETL/development work
+   - SYSADMIN - Built-in role with administrative privileges
 
 ### Real-Time Data Pipeline
 - **Streams**: `SOCIAL_MEDIA_USERS_STREAM` captures all changes (inserts, updates, deletes) to Bronze data
@@ -95,19 +97,20 @@ Run the SQL scripts in the following sequence on Snowflake:
 1. sql/00_database_setup/create_database.sql
 2. sql/00_database_setup/create_schemas.sql
 3. sql/00_database_setup/create_warehouse.sql
-4. sql/01_ingestion_setup/00_create_storage_integration.sql
-5. sql/01_ingestion_setup/01_create_stage.sql
-6. sql/01_ingestion_setup/02_create_file_format.sql
-7. sql/02_bronze/create_bronze_tables.sql
-8. sql/02_bronze/load_bronze_data.sql (requires CSV file uploaded to cloud storage)
-9. sql/03_silver/create_silver_tables.sql
-10. sql/03_silver/transform_bronze_to_silver.sql
-11. sql/04_gold/create_metrics_tables.sql
-12. sql/04_gold/load_business_metrics.sql
-13. sql/05_orchestration/create_streams.sql
-14. sql/05_orchestration/create_tasks.sql
-15. sql/06_governance/masking_policies.sql
-16. sql/06_governance/row_access_policies.sql
+4. sql/00_database_setup/03_create_roles.sql
+5. sql/01_ingestion_setup/00_create_storage_integration.sql
+6. sql/01_ingestion_setup/01_create_stage.sql
+7. sql/01_ingestion_setup/02_create_file_format.sql
+8. sql/02_bronze/create_bronze_tables.sql
+9. sql/02_bronze/load_bronze_data.sql (requires CSV file uploaded to cloud storage)
+10. sql/03_silver/create_silver_tables.sql
+11. sql/03_silver/transform_bronze_to_silver.sql
+12. sql/04_gold/create_metrics_tables.sql
+13. sql/04_gold/load_business_metrics.sql
+14. sql/05_orchestration/create_streams.sql
+15. sql/05_orchestration/create_tasks.sql
+16. sql/06_governance/masking_policies.sql
+17. sql/06_governance/row_access_policies.sql
 ```
 
 ## Key Features

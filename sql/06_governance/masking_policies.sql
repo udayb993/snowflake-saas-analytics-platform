@@ -1,13 +1,16 @@
--- Create roles if they don't exist
-CREATE ROLE IF NOT EXISTS ANALYST_ROLE;
-CREATE ROLE IF NOT EXISTS ADMIN_ROLE;
+-- ====================================================================================
+-- DYNAMIC DATA MASKING POLICIES
+-- ====================================================================================
+-- This file creates and applies masking policies to sensitive columns
+-- Roles: SYSADMIN (built-in), ANALYST_ROLE (see 00_database_setup/03_create_roles.sql)
+-- ====================================================================================
 
 -- Create masking policy for sensitive health data
 CREATE OR REPLACE MASKING POLICY SAAS_ANALYTICS.GOVERNANCE.SENSITIVE_DATA_MASKING_POLICY
 AS (VAL STRING) 
 RETURNS STRING ->
 CASE
-    WHEN CURRENT_ROLE() IN ('ADMIN_ROLE') THEN VAL
+    WHEN CURRENT_ROLE() IN ('SYSADMIN') THEN VAL
     WHEN CURRENT_ROLE() IN ('ANALYST_ROLE') THEN '***MASKED***'
     ELSE NULL
 END;

@@ -1,11 +1,14 @@
--- Create roles if they don't exist
-CREATE ROLE IF NOT EXISTS ADMIN_ROLE;
-CREATE ROLE IF NOT EXISTS DEVELOPER_ROLE;
+-- ====================================================================================
+-- ROW ACCESS POLICIES FOR MULTI-TENANCY
+-- ====================================================================================
+-- This file creates and applies row-level security (RLS) policies for multi-tenant isolation
+-- Roles: SYSADMIN (built-in), DEVELOPER_ROLE (see 00_database_setup/03_create_roles.sql)
+-- ====================================================================================
 
 -- Create Row Access Policy for multi-tenancy
 CREATE OR REPLACE ROW ACCESS POLICY SAAS_ANALYTICS.GOVERNANCE.TENANT_RLS
 AS (TENANT_ID STRING) RETURNS BOOLEAN ->
-CURRENT_ROLE() IN ('ADMIN_ROLE') 
+CURRENT_ROLE() IN ('SYSADMIN') 
 OR CURRENT_ROLE() = 'DEVELOPER_ROLE'
 OR EXISTS (
     SELECT 1 FROM SAAS_ANALYTICS.GOVERNANCE.ROLE_TENANT_MAPPING
