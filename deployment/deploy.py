@@ -64,7 +64,8 @@ class SnowflakeDeployer:
         
         self.environment = environment
         self.database_name = self.DATABASE_MAP[environment]
-        self.project_root = Path(__file__).parent
+        # Project root is parent of deployment folder
+        self.project_root = Path(__file__).parent.parent
     
     def read_and_substitute(self, file_path: str) -> str:
         """Read SQL file and substitute SAAS_ANALYTICS with environment-specific name."""
