@@ -1,0 +1,29 @@
+# Environment Configuration
+# Set the environment below: dev, qa, or prod
+# This controls which database name is used across all SQL files
+
+environment: dev
+
+# Database naming convention
+database_names:
+  dev: SAAS_ANALYTICS_DEV
+  qa: SAAS_ANALYTICS_QA
+  prod: SAAS_ANALYTICS_PROD
+
+# Warehouse configuration (same across environments)
+warehouse: SAAS_WH
+
+# All schemas remain the same across environments
+schemas:
+  - BRONZE
+  - SILVER
+  - GOLD
+  - COMMON
+  - GOVERNANCE
+  - ORCHESTRATION
+
+# Roles (same across environments)
+roles:
+  - ANALYST_ROLE
+  - QA_ROLE
+  - DEVELOPER_ROLE
