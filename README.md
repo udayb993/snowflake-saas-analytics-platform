@@ -1,48 +1,66 @@
 # Snowflake SaaS Analytics Platform
 
 ## Project Overview
-This project demonstrates a production-ready Snowflake-based SaaS analytics platform. It implements a complete medallion architecture (Bronze → Silver → Gold) with multi-tenant data modeling, incremental data ingestion, real-time streaming with tasks, and comprehensive data governance including row-level security (RLS) and dynamic data masking.
+
+This project demonstrates a **production-ready Snowflake-based SaaS analytics platform** with:
+
+✅ **Medallion Architecture** (Bronze → Silver → Gold) - Complete data pipeline  
+✅ **Multi-Tenant Data Modeling** - Tenant isolation with row-level security  
+✅ **Incremental Data Processing** - Change Data Capture (CDC) with streams  
+✅ **Data Governance** - Dynamic masking & row-level security  
+✅ **Environment-Aware Deployment** - dev/qa/prod with automatic substitution  
+✅ **Production-Ready Procedures** - MERGE-based idempotent transformations  
 
 The platform processes Instagram user behavior data with 58+ attributes including engagement metrics, health metrics, and social activity patterns, simulating a real-world SaaS analytics backend.
 
 ## Repository Structure
 ```
 snowflake-saas-analytics-platform/
-├── data/
-│   └── social_media_part_ad.csv (Instagram user analytics dataset)
-├── sql/
+├── deployment/                          🆕 Deployment scripts & configuration
+│   ├── README.md                        Quick start guide
+│   ├── DEPLOYMENT.md                    Comprehensive deployment documentation
+│   ├── deploy.py                        Main deployment script (Python) ✅ RECOMMENDED
+│   ├── deploy.sh                        Bash deployment alternative
+│   └── config/
+│       └── environment.yml              Environment variable configuration
+│
+├── sql/                                 SQL scripts (organized by layer)
 │   ├── 00_database_setup/
-│   │   ├── create_database.sql
-│   │   ├── create_schemas.sql (BRONZE, SILVER, GOLD, COMMON, ORCHESTRATION, GOVERNANCE)
-│   │   ├── create_warehouse.sql
-│   │   └── 03_create_roles.sql (ADMIN_ROLE, ANALYST_ROLE, DEVELOPER_ROLE with privileges)
+│   │   ├── 01_create_roles.sql          Create ANALYST_ROLE, QA_ROLE, DEVELOPER_ROLE
+│   │   ├── 02_create_database.sql       Create SAAS_ANALYTICS database (placeholder)
+│   │   ├── 03_create_schemas.sql        Create schemas: BRONZE, SILVER, GOLD, COMMON, GOVERNANCE, ORCHESTRATION
+│   │   └── 04_create_warehouse.sql      Create SAAS_WH warehouse
 │   │
 │   ├── 01_ingestion_setup/
-│   │   ├── 00_create_storage_integration.sql (AWS S3 storage integration setup)
-│   │   ├── 01_create_stage.sql (External stage referencing S3 via storage integration)
-│   │   └── 02_create_file_format.sql (CSV format configuration)
+│   │   ├── 00_create_storage_integration.sql    AWS S3 storage integration
+│   │   ├── 01_create_file_format.sql            CSV file format configuration
+│   │   └── 02_create_stage.sql                  External stage for S3 access
 │   │
-│   ├── 02_bronze/
-│   │   ├── create_bronze_tables.sql (Raw data ingestion - 58 columns)
-│   │   └── load_bronze_data.sql (COPY command with metadata)
+│   ├── 02_bronze/                       Raw data layer (58 columns, all STRING)
+│   │   ├── 00_create_bronze_tables.sql          Create raw data table
+│   │   ├── 01_create_bronze_streams.sql         Create CDC stream
+│   │   ├── 02_procedure_load_bronze_data.sql    Procedure to load from S3
+│   │   └── 03_create_daily_load_task.sql        Task to run daily load
 │   │
-│   ├── 03_silver/
-│   │   ├── create_silver_tables.sql (Data cleansing & type conversion)
-│   │   └── transform_bronze_to_silver.sql (ETL transformations)
+│   ├── 03_silver/                       Cleaned & typed data (data quality layer)
+│   │   ├── 00_create_silver_tables.sql          Create cleaned table with proper types
+│   │   ├── 01_create_silver_streams.sql         Create CDC stream for changes
+│   │   ├── 02_procedure_bronze_to_silver.sql    MERGE procedure (idempotent)
+│   │   └── 03_task_bronze_to_silver.sql         Hourly transformation task
 │   │
-│   ├── 04_gold/
-│   │   ├── create_metrics_tables.sql (Business metrics aggregation)
-│   │   └── load_business_metrics.sql (Analytics queries)
-│   │
-│   ├── 05_orchestration/
-│   │   ├── create_streams.sql (Change Data Capture - CDC)
-│   │   └── create_tasks.sql (Hourly incremental transformations)
+│   ├── 04_gold/                         Business metrics (analytics layer)
+│   │   ├── 00_create_metrics_tables.sql         Create 3 gold tables
+│   │   ├── 01_procedure_silver_to_gold.sql      MERGE procedures + master orchestrator
+│   │   └── 02_task_gold_metrics.sql             Daily metrics task
 │   │
 │   └── 06_governance/
-│       ├── masking_policies.sql (Dynamic data masking for sensitive fields)
-│       └── row_access_policies.sql (Multi-tenant row-level security)
+│       ├── masking_policies.sql         Dynamic data masking (age, BMI, blood pressure)
+│       └── row_access_policies.sql      Multi-tenant row-level security (RLS)
 │
-└── README.md (This file)
+├── data/
+│   └── social_media_part_ad.csv         Sample dataset (58 columns, Instagram analytics)
+│
+└── README.md                            This file
 ```
 
 ## Data Source & Schema
