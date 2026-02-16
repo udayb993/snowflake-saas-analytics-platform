@@ -48,7 +48,7 @@ class SnowflakeDeployer:
         ('sql/03_silver/03_task_bronze_to_silver.sql', 'Creating silver tasks'),
         
         # Gold Layer
-        ('sql/04_gold/create_metrics_tables.sql', 'Creating gold tables'),
+        ('sql/04_gold/00_create_metrics_tables.sql', 'Creating gold tables'),
         ('sql/04_gold/01_procedure_silver_to_gold.sql', 'Creating gold procedures'),
         ('sql/04_gold/02_task_gold_metrics.sql', 'Creating gold tasks'),
         

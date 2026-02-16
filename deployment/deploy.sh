@@ -111,7 +111,7 @@ deploy_sql_file "sql/03_silver/02_procedure_bronze_to_silver.sql" "Creating silv
 deploy_sql_file "sql/03_silver/03_task_bronze_to_silver.sql" "Creating silver tasks"
 
 echo -e "\n${GREEN}Step 5: Gold Layer${NC}"
-deploy_sql_file "sql/04_gold/create_metrics_tables.sql" "Creating gold tables"
+deploy_sql_file "sql/04_gold/00_create_metrics_tables.sql" "Creating gold tables"
 deploy_sql_file "sql/04_gold/01_procedure_silver_to_gold.sql" "Creating gold procedures"
 deploy_sql_file "sql/04_gold/02_task_gold_metrics.sql" "Creating gold tasks"
 
