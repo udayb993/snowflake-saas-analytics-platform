@@ -141,6 +141,13 @@ class SnowflakeDeployer:
                 )
                 print(f"     ✓ Success")
                 return True
+            except subprocess.CalledProcessError as e:
+                print(f"     ❌ Error: Command failed with exit code {e.returncode}")
+                if e.stderr:
+                    print(f"     STDERR:\n{e.stderr}")
+                if e.stdout:
+                    print(f"     STDOUT:\n{e.stdout}")
+                return False
             except FileNotFoundError:
                 print(f"     ⚠️  Snowflake CLI not found. Using dry-run mode.")
                 print(f"     ✓ [DRY RUN] SQL content prepared (execute manually)")
