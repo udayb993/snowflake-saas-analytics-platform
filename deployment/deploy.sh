@@ -116,8 +116,8 @@ deploy_sql_file "sql/04_gold/01_procedure_silver_to_gold.sql" "Creating gold pro
 deploy_sql_file "sql/04_gold/02_task_gold_metrics.sql" "Creating gold tasks"
 
 echo -e "\n${GREEN}Step 6: Governance${NC}"
-deploy_sql_file "sql/06_governance/masking_policies.sql" "Creating masking policies"
-deploy_sql_file "sql/06_governance/row_access_policies.sql" "Creating RLS policies"
+deploy_sql_file "sql/05_governance/masking_policies.sql" "Creating masking policies"
+deploy_sql_file "sql/05_governance/row_access_policies.sql" "Creating RLS policies"
 
 echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}✅ Deployment complete for environment: ${ENVIRONMENT^^}${NC}"

@@ -53,8 +53,8 @@ class SnowflakeDeployer:
         ('sql/04_gold/02_task_gold_metrics.sql', 'Creating gold tasks'),
         
         # Governance
-        ('sql/06_governance/masking_policies.sql', 'Creating masking policies'),
-        ('sql/06_governance/row_access_policies.sql', 'Creating RLS policies'),
+        ('sql/05_governance/masking_policies.sql', 'Creating masking policies'),
+        ('sql/05_governance/row_access_policies.sql', 'Creating RLS policies'),
     ]
     
     def __init__(self, environment: str):
