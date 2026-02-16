@@ -25,8 +25,8 @@ CREATE OR REPLACE STORAGE INTEGRATION saas_s3_integration
   TYPE = S3
   STORAGE_PROVIDER = S3
   ENABLED = TRUE
-  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/snowflake-s3-role'
-  STORAGE_ALLOWED_LOCATIONS = ('s3://saas-analytics-data/raw/');
+  STORAGE_AWS_ROLE_ARN = '{{STORAGE_AWS_ROLE_ARN}}'
+  STORAGE_ALLOWED_LOCATIONS = ({{STORAGE_ALLOWED_LOCATIONS}});
 
 -- ====================================================================================
 -- VERIFY STORAGE INTEGRATION
