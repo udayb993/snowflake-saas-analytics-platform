@@ -20,10 +20,27 @@ schemas:
   - GOLD
   - COMMON
   - GOVERNANCE
-  - ORCHESTRATION
 
 # Roles (same across environments)
 roles:
   - ANALYST_ROLE
   - QA_ROLE
   - DEVELOPER_ROLE
+
+# AWS Storage Integration Configuration (environment-specific)
+storage_integration:
+  dev:
+    aws_role_arn: 'arn:aws:iam::862195951585:role/snowflake-saas-analytics-role'
+    allowed_locations:
+      - 's3://snowflake-saas-analytics-data-dev/raw/'
+    stage_url: 's3://snowflake-saas-analytics-data-dev/raw/'
+  qa:
+    aws_role_arn: 'arn:aws:iam::862195951585:role/snowflake-saas-analytics-role'
+    allowed_locations:
+      - 's3://snowflake-saas-analytics-data-qa/raw/'
+    stage_url: 's3://snowflake-saas-analytics-data-qa/raw/'
+  prod:
+    aws_role_arn: 'arn:aws:iam::862195951585:role/snowflake-saas-analytics-role'
+    allowed_locations:
+      - 's3://snowflake-saas-analytics-data-prod/raw/'
+    stage_url: 's3://snowflake-saas-analytics-data-prod/raw/'

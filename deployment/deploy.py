@@ -9,6 +9,7 @@ import os
 import sys
 import argparse
 import subprocess
+import yaml
 from pathlib import Path
 from typing import Dict, List
 
@@ -48,13 +49,13 @@ class SnowflakeDeployer:
         ('sql/03_silver/03_task_bronze_to_silver.sql', 'Creating silver tasks'),
         
         # Gold Layer
-        ('sql/04_gold/create_metrics_tables.sql', 'Creating gold tables'),
+        ('sql/04_gold/00_create_metrics_tables.sql', 'Creating gold tables'),
         ('sql/04_gold/01_procedure_silver_to_gold.sql', 'Creating gold procedures'),
         ('sql/04_gold/02_task_gold_metrics.sql', 'Creating gold tasks'),
         
         # Governance
-        ('sql/06_governance/masking_policies.sql', 'Creating masking policies'),
-        ('sql/06_governance/row_access_policies.sql', 'Creating RLS policies'),
+        ('sql/05_governance/masking_policies.sql', 'Creating masking policies'),
+        ('sql/05_governance/row_access_policies.sql', 'Creating RLS policies'),
     ]
     
     def __init__(self, environment: str):
@@ -67,8 +68,22 @@ class SnowflakeDeployer:
         # Project root is parent of deployment folder
         self.project_root = Path(__file__).parent.parent
     
+    def get_storage_config(self) -> dict:
+        """Get storage integration config from environment.yml"""
+        import yaml
+        config_path = self.project_root / 'deployment/config/environment.yml'
+        
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        return config.get('storage_integration', {}).get(self.environment, {})
+    
+    def format_allowed_locations(self, locations: list) -> str:
+        """Format allowed locations list for SQL."""
+        return ', '.join([f"'{loc}'" for loc in locations])
+    
     def read_and_substitute(self, file_path: str) -> str:
-        """Read SQL file and substitute SAAS_ANALYTICS with environment-specific name."""
+        """Read SQL file and substitute variables with environment-specific values."""
         full_path = self.project_root / file_path
         
         if not full_path.exists():
@@ -78,13 +93,31 @@ class SnowflakeDeployer:
             content = f.read()
         
         # Replace SAAS_ANALYTICS with environment-specific database name
-        # This regex ensures we only replace the database name, not partial matches
         import re
         content = re.sub(
             r'\bSAAS_ANALYTICS\b',
             self.database_name,
             content
         )
+        
+        # Replace storage integration variables
+        storage_config = self.get_storage_config()
+        if storage_config:
+            content = content.replace(
+                '{{STORAGE_AWS_ROLE_ARN}}',
+                storage_config.get('aws_role_arn', 'arn:aws:iam::123456789012:role/snowflake-s3-role')
+            )
+            allowed_locations = storage_config.get('allowed_locations', ['s3://saas-analytics-data/raw/'])
+            content = content.replace(
+                '{{STORAGE_ALLOWED_LOCATIONS}}',
+                self.format_allowed_locations(allowed_locations)
+            )
+            # Replace stage URL
+            stage_url = storage_config.get('stage_url', 's3://saas-analytics-data/raw/')
+            content = content.replace(
+                '{{STAGE_URL}}',
+                stage_url
+            )
         
         return content
     
@@ -114,6 +147,13 @@ class SnowflakeDeployer:
                 )
                 print(f"     ✓ Success")
                 return True
+            except subprocess.CalledProcessError as e:
+                print(f"     ❌ Error: Command failed with exit code {e.returncode}")
+                if e.stderr:
+                    print(f"     STDERR:\n{e.stderr}")
+                if e.stdout:
+                    print(f"     STDOUT:\n{e.stdout}")
+                return False
             except FileNotFoundError:
                 print(f"     ⚠️  Snowflake CLI not found. Using dry-run mode.")
                 print(f"     ✓ [DRY RUN] SQL content prepared (execute manually)")

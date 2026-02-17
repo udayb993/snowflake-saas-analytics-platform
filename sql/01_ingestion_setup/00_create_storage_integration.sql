@@ -21,12 +21,12 @@ USE ROLE SYSADMIN;
 --   6. Test with: LIST @SAAS_ANALYTICS.BRONZE.RAW_STAGE;
 -- ====================================================================================
 
-CREATE OR REPLACE STORAGE INTEGRATION saas_s3_integration
-  TYPE = S3
-  STORAGE_PROVIDER = S3
+CREATE STORAGE INTEGRATION IF NOT EXISTS saas_s3_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = 'S3'
   ENABLED = TRUE
-  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/snowflake-s3-role'
-  STORAGE_ALLOWED_LOCATIONS = ('s3://saas-analytics-data/raw/');
+  STORAGE_AWS_ROLE_ARN = '{{STORAGE_AWS_ROLE_ARN}}'
+  STORAGE_ALLOWED_LOCATIONS = ({{STORAGE_ALLOWED_LOCATIONS}});
 
 -- ====================================================================================
 -- VERIFY STORAGE INTEGRATION
@@ -37,5 +37,5 @@ DESC STORAGE INTEGRATION saas_s3_integration;
 -- ====================================================================================
 -- GRANT PRIVILEGES
 -- ====================================================================================
--- Grant the integration to SYSADMIN role (system admin)
-GRANT USAGE ON STORAGE INTEGRATION saas_s3_integration TO ROLE SYSADMIN;
+-- Grant the integration to DEVELOPER_ROLE
+GRANT USAGE ON INTEGRATION saas_s3_integration TO ROLE DEVELOPER_ROLE;
