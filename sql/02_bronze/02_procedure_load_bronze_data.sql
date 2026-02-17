@@ -34,7 +34,9 @@ BEGIN
     )
     FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
     
-    SET ROWS_LOADED = @@rowcount;
+    -- Get count of rows loaded from COPY command result
+    SELECT SUM("rows_inserted") INTO ROWS_LOADED 
+    FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
     
     -- Return summary
     RETURN TABLE (
