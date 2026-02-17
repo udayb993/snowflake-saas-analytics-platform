@@ -16,16 +16,13 @@ USE ROLE SYSADMIN;
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_TENANT_ENGAGEMENT_METRICS()
 RETURNS TABLE (
-    ROWS_INSERTED INT,
-    ROWS_UPDATED INT,
+    ROWS_INSERTED NUMBER,
+    ROWS_UPDATED NUMBER,
     STATUS VARCHAR
 )
 LANGUAGE SQL
 AS
 $$
-DECLARE
-    ROWS_INSERTED INT DEFAULT 0;
-    ROWS_UPDATED INT DEFAULT 0;
 BEGIN
     -- MERGE into tenant engagement metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS tgt
@@ -77,17 +74,17 @@ BEGIN
             CURRENT_TIMESTAMP()
         );
     
-    SET ROWS_INSERTED = (SELECT COUNT(*) FROM SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS 
-                         WHERE LAST_UPDATED = CURRENT_TIMESTAMP());
-    SET ROWS_UPDATED = @@rowcount - ROWS_INSERTED;
+    -- Get count of rows loaded from COPY command result
+    LET rows_loaded RESULTSET := (
+        SELECT "number of rows inserted" AS ROWS_INSERTED,
+               "number of rows updated" AS ROWS_UPDATED,
+               'SUCCESSFUL'::VARCHAR AS STATUS  
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+    );
     
     -- Return summary
-    RETURN TABLE (
-        SELECT
-            ROWS_INSERTED,
-            ROWS_UPDATED,
-            'Tenant engagement metrics loaded successfully'::VARCHAR AS STATUS
-    );
+    RETURN TABLE (rows_loaded);
+
 END;
 $$;
 
@@ -100,14 +97,12 @@ $$;
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_USER_ENGAGEMENT_SNAPSHOT()
 RETURNS TABLE (
-    ROWS_INSERTED INT,
+    ROWS_INSERTED NUMBER,
     STATUS VARCHAR
 )
 LANGUAGE SQL
 AS
 $$
-DECLARE
-    ROWS_INSERTED INT DEFAULT 0;
 BEGIN
     -- Insert today's user engagement snapshot
     INSERT INTO SAAS_ANALYTICS.GOLD.USER_ENGAGEMENT_SNAPSHOT (
@@ -141,14 +136,16 @@ BEGIN
         WHERE user_id = SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN.user_id
     );
     
-    SET ROWS_INSERTED = @@rowcount;
+    -- Get count of rows loaded from COPY command result
+    LET rows_loaded RESULTSET := (
+        SELECT "number of rows inserted" AS ROWS_INSERTED,
+               'SUCCESSFUL'::VARCHAR AS STATUS  
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+    );
     
     -- Return summary
-    RETURN TABLE (
-        SELECT
-            ROWS_INSERTED,
-            'User engagement snapshots created for ' || ROWS_INSERTED || ' users'::VARCHAR AS STATUS
-    );
+    RETURN TABLE (rows_loaded);
+
 END;
 $$;
 
@@ -161,16 +158,13 @@ $$;
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_CONTENT_PERFORMANCE_METRICS()
 RETURNS TABLE (
-    ROWS_INSERTED INT,
-    ROWS_UPDATED INT,
+    ROWS_INSERTED NUMBER,
+    ROWS_UPDATED NUMBER,
     STATUS VARCHAR
 )
 LANGUAGE SQL
 AS
 $$
-DECLARE
-    ROWS_INSERTED INT DEFAULT 0;
-    ROWS_UPDATED INT DEFAULT 0;
 BEGIN
     -- MERGE into content performance metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.CONTENT_PERFORMANCE_METRICS tgt
@@ -219,65 +213,17 @@ BEGIN
             CURRENT_TIMESTAMP()
         );
     
-    SET ROWS_INSERTED = (SELECT COUNT(*) FROM SAAS_ANALYTICS.GOLD.CONTENT_PERFORMANCE_METRICS 
-                         WHERE snapshot_date = CURRENT_DATE() AND LAST_UPDATED = CURRENT_TIMESTAMP());
-    SET ROWS_UPDATED = @@rowcount - ROWS_INSERTED;
+    -- Get count of rows loaded from COPY command result
+    LET rows_loaded RESULTSET := (
+        SELECT "number of rows inserted" AS ROWS_INSERTED,
+               "number of rows updated" AS ROWS_UPDATED,
+               'SUCCESSFUL'::VARCHAR AS STATUS  
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+    );
     
     -- Return summary
-    RETURN TABLE (
-        SELECT
-            ROWS_INSERTED,
-            ROWS_UPDATED,
-            'Content performance metrics loaded successfully'::VARCHAR AS STATUS
-    );
+    RETURN TABLE (rows_loaded);
+
 END;
 $$;
 
--- ==================================================================================
--- MASTER PROCEDURE: LOAD_ALL_GOLD_METRICS
--- ==================================================================================
--- Orchestrates loading all gold layer metrics in sequence
--- Call this from a single task to load all metrics atomically
--- ====================================================================================
-
-CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_ALL_GOLD_METRICS()
-RETURNS TABLE (
-    PROCEDURE_NAME VARCHAR,
-    STATUS VARCHAR,
-    EXECUTION_TIME_SECONDS INT
-)
-LANGUAGE SQL
-AS
-$$
-DECLARE
-    V_START_TIME TIMESTAMP;
-    V_END_TIME TIMESTAMP;
-    V_DURATION INT;
-BEGIN
-    -- Load Tenant Engagement Metrics
-    SET V_START_TIME = CURRENT_TIMESTAMP();
-    CALL SAAS_ANALYTICS.GOLD.LOAD_TENANT_ENGAGEMENT_METRICS();
-    SET V_END_TIME = CURRENT_TIMESTAMP();
-    SET V_DURATION = DATEDIFF(SECOND, V_START_TIME, V_END_TIME);
-    
-    INSERT INTO :RESULT_TABLE VALUES ('LOAD_TENANT_ENGAGEMENT_METRICS', 'SUCCESS', V_DURATION);
-    
-    -- Load User Engagement Snapshot
-    SET V_START_TIME = CURRENT_TIMESTAMP();
-    CALL SAAS_ANALYTICS.GOLD.LOAD_USER_ENGAGEMENT_SNAPSHOT();
-    SET V_END_TIME = CURRENT_TIMESTAMP();
-    SET V_DURATION = DATEDIFF(SECOND, V_START_TIME, V_END_TIME);
-    
-    INSERT INTO :RESULT_TABLE VALUES ('LOAD_USER_ENGAGEMENT_SNAPSHOT', 'SUCCESS', V_DURATION);
-    
-    -- Load Content Performance Metrics
-    SET V_START_TIME = CURRENT_TIMESTAMP();
-    CALL SAAS_ANALYTICS.GOLD.LOAD_CONTENT_PERFORMANCE_METRICS();
-    SET V_END_TIME = CURRENT_TIMESTAMP();
-    SET V_DURATION = DATEDIFF(SECOND, V_START_TIME, V_END_TIME);
-    
-    INSERT INTO :RESULT_TABLE VALUES ('LOAD_CONTENT_PERFORMANCE_METRICS', 'SUCCESS', V_DURATION);
-    
-    RETURN;
-END;
-$$;

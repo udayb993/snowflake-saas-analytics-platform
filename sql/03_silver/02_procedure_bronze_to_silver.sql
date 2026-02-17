@@ -241,7 +241,6 @@ BEGIN
 
     );
 
-    
     -- Get count of rows loaded from COPY command result
     LET rows_loaded RESULTSET := (
         SELECT "number of rows inserted" AS ROWS_INSERTED,
