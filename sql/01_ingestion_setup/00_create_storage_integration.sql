@@ -37,5 +37,5 @@ DESC STORAGE INTEGRATION saas_s3_integration;
 -- ====================================================================================
 -- GRANT PRIVILEGES
 -- ====================================================================================
--- Grant the integration to SYSADMIN role (system admin)
-GRANT USAGE ON STORAGE INTEGRATION saas_s3_integration TO ROLE SYSADMIN;
+-- Grant the integration to DEVELOPER_ROLE
+GRANT USAGE ON INTEGRATION saas_s3_integration TO ROLE DEVELOPER_ROLE;

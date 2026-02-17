@@ -17,7 +17,7 @@ USE ROLE SYSADMIN;
 -- ====================================================================================
 
 CREATE OR REPLACE STAGE SAAS_ANALYTICS.BRONZE.RAW_STAGE
-  URL = 's3://saas-analytics-data/raw/'
+  URL = '{{STAGE_URL}}'
   STORAGE_INTEGRATION = saas_s3_integration
   FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
 

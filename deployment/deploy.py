@@ -112,6 +112,12 @@ class SnowflakeDeployer:
                 '{{STORAGE_ALLOWED_LOCATIONS}}',
                 self.format_allowed_locations(allowed_locations)
             )
+            # Replace stage URL
+            stage_url = storage_config.get('stage_url', 's3://saas-analytics-data/raw/')
+            content = content.replace(
+                '{{STAGE_URL}}',
+                stage_url
+            )
         
         return content
     
