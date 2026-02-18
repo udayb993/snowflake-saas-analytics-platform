@@ -54,6 +54,8 @@ class SnowflakeDeployer:
         ('sql/05_orchestration/00_task_daily_load_bronze.sql', 'Creating bronze tasks'),
         ('sql/05_orchestration/01_task_bronze_to_silver.sql', 'Creating silver tasks'),
         ('sql/05_orchestration/02_task_gold_metrics.sql', 'Creating gold tasks'),
+        ('sql/05_orchestration/03_resume_tasks.sql', 'Resuming all tasks'),
+        
         
         # Governance
         ('sql/06_governance/masking_policies.sql', 'Creating masking policies'),
