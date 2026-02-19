@@ -40,22 +40,26 @@ class SnowflakeDeployer:
         ('sql/02_bronze/00_create_bronze_tables.sql', 'Creating bronze tables'),
         ('sql/02_bronze/01_create_bronze_streams.sql', 'Creating bronze streams'),
         ('sql/02_bronze/02_procedure_load_bronze_data.sql', 'Creating bronze procedures'),
-        ('sql/02_bronze/03_create_daily_load_task.sql', 'Creating bronze tasks'),
         
         # Silver Layer
         ('sql/03_silver/00_create_silver_tables.sql', 'Creating silver tables'),
         ('sql/03_silver/01_create_silver_streams.sql', 'Creating silver streams'),
         ('sql/03_silver/02_procedure_bronze_to_silver.sql', 'Creating silver procedures'),
-        ('sql/03_silver/03_task_bronze_to_silver.sql', 'Creating silver tasks'),
         
         # Gold Layer
         ('sql/04_gold/00_create_metrics_tables.sql', 'Creating gold tables'),
         ('sql/04_gold/01_procedure_silver_to_gold.sql', 'Creating gold procedures'),
-        ('sql/04_gold/02_task_gold_metrics.sql', 'Creating gold tasks'),
+        
+        # Orchestration
+        ('sql/05_orchestration/00_task_daily_load_bronze.sql', 'Creating bronze tasks'),
+        ('sql/05_orchestration/01_task_bronze_to_silver.sql', 'Creating silver tasks'),
+        ('sql/05_orchestration/02_task_gold_metrics.sql', 'Creating gold tasks'),
+        ('sql/05_orchestration/03_resume_tasks.sql', 'Resuming all tasks'),
+        
         
         # Governance
-        ('sql/05_governance/masking_policies.sql', 'Creating masking policies'),
-        ('sql/05_governance/row_access_policies.sql', 'Creating RLS policies'),
+        ('sql/06_governance/masking_policies.sql', 'Creating masking policies'),
+        ('sql/06_governance/row_access_policies.sql', 'Creating RLS policies'),
     ]
     
     def __init__(self, environment: str):
