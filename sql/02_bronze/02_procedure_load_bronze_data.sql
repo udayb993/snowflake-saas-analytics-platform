@@ -8,17 +8,11 @@ USE ROLE SYSADMIN;
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.BRONZE.LOAD_BRONZE_DATA()
-RETURNS TABLE (
-    ROWS_LOADED NUMBER,
-    STATUS VARCHAR
-)
+RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
-DECLARE
-    ROWS_LOADED NUMBER DEFAULT 0;
 BEGIN
-    -- Load data from S3 stage into bronze table
     COPY INTO SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW
     FROM (
         SELECT
@@ -33,16 +27,7 @@ BEGIN
         FROM @SAAS_ANALYTICS.BRONZE.RAW_STAGE/SOCIAL_MEDIA_USERS_RAW/
     )
     FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
-    
-    -- Get count of rows loaded from COPY command result
-    LET rows_loaded RESULTSET := (
-        SELECT COALESCE(SUM(rows_inserted),0) AS ROWS_LOADED,
-               'SUCCESSFUL'::VARCHAR AS STATUS  
-          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
-    );
-    
-    -- Return summary
-    RETURN TABLE (rows_loaded);
 
+    RETURN 'SUCCESSFUL';
 END;
 $$;
