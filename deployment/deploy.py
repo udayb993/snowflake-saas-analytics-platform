@@ -56,10 +56,10 @@ class SnowflakeDeployer:
         ('sql/05_orchestration/02_task_gold_metrics.sql', 'Creating gold tasks'),
         ('sql/05_orchestration/03_resume_tasks.sql', 'Resuming all tasks'),
         
-        
         # Governance
-        ('sql/06_governance/masking_policies.sql', 'Creating masking policies'),
-        ('sql/06_governance/row_access_policies.sql', 'Creating RLS policies'),
+        ('sql/06_governance/00_create_governance_tables.sql', 'Creating governance tables'),
+        ('sql/06_governance/01_row_access_policies.sql', 'Creating row access policies'),
+        ('sql/06_governance/02_masking_policies.sql', 'Creating masking policies'),
     ]
     
     def __init__(self, environment: str):
