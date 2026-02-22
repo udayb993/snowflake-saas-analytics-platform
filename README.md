@@ -22,7 +22,10 @@ The platform processes Instagram user behavior data with 58+ attributes includin
 - ✅ Continuous auditing and performance metrics
 - ✅ 8 monitoring dashboards and automated daily health checks
 
+---
+
 ## Repository Structure
+
 ```
 snowflake-saas-analytics-platform/
 ├── deployment/                          Deployment scripts & configuration
@@ -38,7 +41,7 @@ snowflake-saas-analytics-platform/
 │   │   ├── 02_create_database.sql
 │   │   ├── 03_create_schemas.sql
 │   │   ├── 04_create_warehouse.sql
-│   │   └── 05_create_data_quality_schema.sql          🆕 Data quality & monitoring infrastructure
+│   │   └── 05_create_data_quality_schema.sql     🆕 Data quality & monitoring infrastructure
 │   │
 │   ├── 01_ingestion_setup/
 │   │   ├── 00_create_storage_integration.sql
@@ -67,24 +70,31 @@ snowflake-saas-analytics-platform/
 │   │   └── row_access_policies.sql
 │   │
 │   └── 07_data_quality/                 🆕 Data Quality & Monitoring Framework
-│       ├── 00_create_dq_procedures.sql          7 procedures: quality checks, duplicate detection, error logging
-│       ├── 01_create_dq_views.sql               8 monitoring dashboards and alert views
-│       ├── 02_create_monitoring_tasks.sql       5 automated monitoring tasks
-│       └── 03_enhanced_procedures_with_logging.sql   Enhanced procedures with SLA & error tracking
+│       ├── 00_create_dq_procedures.sql
+│       ├── 01_create_dq_views.sql
+│       ├── 02_create_monitoring_tasks.sql
+│       └── 03_enhanced_procedures_with_logging.sql
 │
 ├── data/
 │   └── social_media_part_ad.csv         Sample dataset (58 columns, Instagram analytics)
 │
+├── DATA_QUALITY_IMPLEMENTATION.md
+├── QUICK_START_DATA_QUALITY.md
 └── README.md                            This file
 ```
 
+---
+
 ## Data Source & Schema
+
 The dataset contains Instagram user analytics with 58 columns:
 - **User Demographics**: age, gender, country, urban_rural, income_level, employment_status, education_level, relationship_status
 - **Health Metrics**: exercise_hours_per_week, sleep_hours_per_night, body_mass_index, blood_pressure_systolic/diastolic, smoking, alcohol_frequency, perceived_stress_score, self_reported_happiness
 - **Engagement Metrics**: daily_active_minutes_instagram, sessions_per_day, posts_created_per_week, reels_watched_per_day, stories_viewed_per_day, likes_given_per_day, comments_written_per_day, followers_count, following_count, user_engagement_score
 - **Account Data**: account_creation_year, last_login_date, subscription_status, two_factor_auth_enabled, biometric_login_used
 - **Platform Activity**: app_name, uses_premium_features, notification_response_rate, linked_accounts_count, content_type_preference, preferred_content_theme, privacy_setting_level, ads_viewed_per_day, ads_clicked_per_day, time_on_feed_per_day, time_on_explore_per_day, time_on_messages_per_day, time_on_reels_per_day, dms_sent/received_per_week, and more
+
+---
 
 ## Architecture
 
@@ -99,10 +109,11 @@ The dataset contains Instagram user analytics with 58 columns:
 - Row Access Policies enforce tenant isolation at the database level
 
 ### Data Governance
+
 1. **Dynamic Data Masking (DDM)**
    - Sensitive health fields (age, BMI, blood pressure) are masked based on role
    - SYSADMIN and ANALYST_ROLE see unmasked values
-   - QA_ROLE and all other roles see "***MASKED***"
+   - QA_ROLE and all other roles see `***MASKED***`
 
 2. **Row-Level Security (RLS)**
    - Multi-tenant isolation via TENANT_RLS policy
@@ -122,7 +133,163 @@ The dataset contains Instagram user analytics with 58 columns:
 - **Tasks**: Hourly scheduled transformation tasks run automatically via Snowflake Task scheduler
 - **Incremental Processing**: Only changed records are processed using streams, optimizing compute costs
 
-## Data Quality & Monitoring Framework (NEW! 🎯)
+---
+
+## Execution Order
+
+> ⚠️ Run scripts in the exact sequence below. Each step depends on objects created in the previous step.
+
+### Step 1 — Database Setup
+
+```sql
+sql/00_database_setup/01_create_roles.sql
+sql/00_database_setup/02_create_database.sql
+sql/00_database_setup/03_create_schemas.sql
+sql/00_database_setup/04_create_warehouse.sql
+sql/00_database_setup/05_create_data_quality_schema.sql   -- Optional: only needed for monitoring framework
+```
+
+### Step 2 — Ingestion Setup
+
+```sql
+-- Update AWS Account ID and IAM role name inside this file before running
+sql/01_ingestion_setup/00_create_storage_integration.sql
+
+sql/01_ingestion_setup/01_create_file_format.sql
+
+-- Update S3 bucket path inside this file before running
+sql/01_ingestion_setup/02_create_stage.sql
+```
+
+> After running `00_create_storage_integration.sql`, execute `DESC STORAGE INTEGRATION saas_s3_integration;` and add the `STORAGE_AWS_EXTERNAL_ID` value to your IAM role trust policy in AWS before continuing.
+
+### Step 3 — Bronze Layer
+
+```sql
+sql/02_bronze/00_create_bronze_tables.sql
+sql/02_bronze/01_create_bronze_streams.sql
+
+-- Upload CSV to S3 first (see Setup Instructions below), then run this
+sql/02_bronze/02_procedure_load_bronze_data.sql
+
+sql/02_bronze/03_create_daily_load_task.sql
+```
+
+### Step 4 — Silver Layer
+
+```sql
+sql/03_silver/00_create_silver_tables.sql
+sql/03_silver/01_create_silver_streams.sql
+sql/03_silver/02_procedure_bronze_to_silver.sql
+sql/03_silver/03_task_bronze_to_silver.sql
+```
+
+### Step 5 — Gold Layer
+
+```sql
+sql/04_gold/create_metrics_tables.sql
+sql/04_gold/01_procedure_silver_to_gold.sql
+sql/04_gold/02_task_gold_metrics.sql
+```
+
+### Step 6 — Governance
+
+```sql
+sql/05_governance/masking_policies.sql
+sql/05_governance/row_access_policies.sql
+```
+
+### Step 7 — Data Quality & Monitoring (Optional but Recommended)
+
+```sql
+sql/07_data_quality/00_create_dq_procedures.sql
+sql/07_data_quality/01_create_dq_views.sql
+sql/07_data_quality/02_create_monitoring_tasks.sql
+sql/07_data_quality/03_enhanced_procedures_with_logging.sql
+```
+
+### Verify Installation
+
+```sql
+SELECT COUNT(*) FROM SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW;
+SELECT COUNT(*) FROM SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN;
+SELECT * FROM SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS;
+```
+
+---
+
+## Setup Instructions
+
+### Option 1: External Cloud Storage (Recommended for Production)
+
+**Using AWS S3**
+
+1. **Configure Storage Integration**
+   - Open `sql/01_ingestion_setup/00_create_storage_integration.sql`
+   - Update the AWS Account ID and IAM role name with your details
+   - Run the script to create the storage integration
+   - Execute `DESC STORAGE INTEGRATION saas_s3_integration;` and copy the `STORAGE_AWS_EXTERNAL_ID`
+   - Add this External ID to your IAM role's trust policy in AWS
+
+2. **Create File Format**
+   - Open `sql/01_ingestion_setup/01_create_file_format.sql` and run it
+
+3. **Create External Stage**
+   - Open `sql/01_ingestion_setup/02_create_stage.sql`
+   - Update the S3 bucket path if needed, then run
+
+4. **Upload Data to S3**
+   ```bash
+   aws s3 cp data/social_media_part_ad.csv s3://your-bucket/raw/
+   ```
+
+5. **Verify Connection**
+   ```sql
+   LIST @SAAS_ANALYTICS.BRONZE.RAW_STAGE;
+   ```
+
+6. **Execute SQL Scripts**
+   - Connect to your Snowflake account
+   - Run scripts in the order specified in the **Execution Order** section above using the Snowflake Web UI or SnowSQL CLI
+
+### Option 2: Internal Stage (Development Only)
+
+**Quick local testing without cloud storage**
+
+```sql
+-- Create internal stage
+CREATE OR REPLACE STAGE SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL
+FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
+
+-- Upload from local machine (run via SnowSQL CLI)
+PUT file:///path/to/data/social_media_part_ad.csv @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
+
+-- Load data
+COPY INTO SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW
+FROM @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
+```
+
+⚠️ **Note**: Internal stages are not recommended for production. Use external stages with storage integrations for enterprise deployments.
+
+### Option 3: Automated Deployment (Recommended)
+
+```bash
+# Install dependencies
+pip install snowflake-connector-python pyyaml
+
+# Deploy to dev
+python3 deployment/deploy.py dev
+
+# Deploy to QA
+python3 deployment/deploy.py qa
+
+# Deploy to production
+python3 deployment/deploy.py prod
+```
+
+---
+
+## Data Quality & Monitoring Framework 🆕
 
 ### Overview
 A comprehensive, production-grade data quality monitoring system that ensures data integrity across all pipeline layers with real-time metrics, error tracking, and automated alerting.
@@ -130,28 +297,29 @@ A comprehensive, production-grade data quality monitoring system that ensures da
 ### Key Components
 
 #### 1. Monitoring Tables (MONITORING Schema)
-Six specialized tables for tracking metrics and anomalies:
 
-- **DQ_METRICS** - Real-time data quality metrics (row counts, null percentages, anomalies)
-- **PIPELINE_ERROR_LOG** - Comprehensive error tracking with recovery status
-- **SLA_TRACKING** - Performance monitoring and SLA compliance metrics
-- **DUPLICATE_DETECTION_LOG** - Duplicate record tracking and removal status
-- **SCHEMA_VALIDATION_LOG** - Type conversion failures and schema changes
-- **PIPELINE_AUDIT_LOG** - Complete audit trail of all pipeline operations
+| Table | Purpose |
+|-------|---------|
+| **DQ_METRICS** | Real-time data quality metrics (row counts, null percentages, anomalies) |
+| **PIPELINE_ERROR_LOG** | Comprehensive error tracking with recovery status |
+| **SLA_TRACKING** | Performance monitoring and SLA compliance metrics |
+| **DUPLICATE_DETECTION_LOG** | Duplicate record tracking and removal status |
+| **SCHEMA_VALIDATION_LOG** | Type conversion failures and schema changes |
+| **PIPELINE_AUDIT_LOG** | Complete audit trail of all pipeline operations |
 
 #### 2. Monitoring Procedures (7 Procedures)
-Automated data quality procedures:
 
-- `CHECK_TABLE_QUALITY()` - Analyzes row counts and basic statistics
-- `DETECT_DUPLICATES()` - Identifies and logs duplicate records
-- `VALIDATE_SCHEMA()` - Validates schema consistency between layers
-- `LOG_PIPELINE_ERROR()` - Centralized error logging with recovery tracking
-- `TRACK_SLA_METRIC()` - Records procedure execution time and SLA compliance
-- `LOG_AUDIT_EVENT()` - Generic audit logging for all pipeline events
-- `CHECK_NULL_PERCENTAGES()` - Analyzes null percentages with threshold alerting
+| Procedure | Purpose |
+|-----------|---------|
+| `CHECK_TABLE_QUALITY()` | Analyzes row counts and basic statistics |
+| `DETECT_DUPLICATES()` | Identifies and logs duplicate records |
+| `VALIDATE_SCHEMA()` | Validates schema consistency between layers |
+| `LOG_PIPELINE_ERROR()` | Centralized error logging with recovery tracking |
+| `TRACK_SLA_METRIC()` | Records procedure execution time and SLA compliance |
+| `LOG_AUDIT_EVENT()` | Generic audit logging for all pipeline events |
+| `CHECK_NULL_PERCENTAGES()` | Analyzes null percentages with threshold alerting |
 
 #### 3. Monitoring Views (8 Dashboards)
-Real-time monitoring dashboards:
 
 | View | Purpose | Alert Level |
 |------|---------|-------------|
@@ -174,10 +342,11 @@ Real-time monitoring dashboards:
 | **NULL_PERCENTAGE_MONITORING** | Every 15 min | Null value tracking | HIGH |
 | **CLEANUP_OLD_LOGS** | Weekly (Sun 4 AM) | Archive old monitoring data | LOW |
 
+> ⚠️ **Cost note**: The 15-minute `NULL_PERCENTAGE_MONITORING` task wakes the warehouse on every run. Consider reducing frequency to hourly in dev/qa environments to avoid unnecessary credit consumption.
+
 #### 5. Enhanced Procedures with Logging
 
 New `TRANSFORM_BRONZE_TO_SILVER_V2()` procedure includes:
-
 - ✅ Comprehensive error handling (TRY-CATCH blocks)
 - ✅ Automatic SLA tracking (30-minute threshold)
 - ✅ Detailed audit logging for all operations
@@ -265,29 +434,7 @@ The framework automatically:
 - ✅ Automatic archive of logs older than 90 days
 - ✅ Optimized queries with proper indexing
 
-## Execution Order
-
-Run the SQL scripts in the following sequence on Snowflake:
-
-```
-1. sql/00_database_setup/create_database.sql
-2. sql/00_database_setup/create_schemas.sql
-3. sql/00_database_setup/create_warehouse.sql
-4. sql/00_database_setup/03_create_roles.sql
-5. sql/01_ingestion_setup/00_create_storage_integration.sql
-6. sql/01_ingestion_setup/01_create_stage.sql
-7. sql/01_ingestion_setup/02_create_file_format.sql
-8. sql/02_bronze/create_bronze_tables.sql
-9. sql/02_bronze/load_bronze_data.sql (requires CSV file uploaded to cloud storage)
-10. sql/03_silver/create_silver_tables.sql
-11. sql/03_silver/transform_bronze_to_silver.sql
-12. sql/04_gold/create_metrics_tables.sql
-13. sql/04_gold/load_business_metrics.sql
-14. sql/05_orchestration/create_streams.sql
-15. sql/05_orchestration/create_tasks.sql
-16. sql/06_governance/masking_policies.sql
-17. sql/06_governance/row_access_policies.sql
-```
+---
 
 ## Key Features
 
@@ -298,98 +445,15 @@ Run the SQL scripts in the following sequence on Snowflake:
 ✅ **Real-Time Processing** - Streams and Tasks for incremental data pipelines  
 ✅ **Production Ready** - All schemas, error handling, and role management in place  
 
-## Setup Instructions
-
-### Option 1: External Cloud Storage (Recommended for Production)
-
-**Using AWS S3**
-
-1. **Configure Storage Integration**
-   - Open `sql/01_ingestion_setup/00_create_storage_integration.sql`
-   - Update the AWS Account ID and IAM role name with your details
-   - Run the script to create the storage integration
-   - Execute `DESC STORAGE INTEGRATION saas_s3_integration;` and copy the `STORAGE_AWS_EXTERNAL_ID`
-   - Add this External ID to your IAM role's trust policy in AWS
-
-2. **Create External Stage**
-   - Open `sql/01_ingestion_setup/01_create_stage.sql`
-   - Update the S3 bucket path if needed
-   - Run the script to create the stage
-
-3. **Create File Format**
-   - Open `sql/01_ingestion_setup/02_create_file_format.sql`
-   - Run the script
-
-4. **Upload Data to S3**
-   ```bash
-   aws s3 cp data/social_media_part_ad.csv s3://your-bucket/raw/
-   ```
-
-5. **Verify Connection**
-   ```sql
-   LIST @SAAS_ANALYTICS.BRONZE.RAW_STAGE;
-   ```
-
-6. **Execute SQL Scripts**
-   - Connect to your Snowflake account
-   - Run scripts in the order specified below using the Snowflake Web UI or SnowSQL CLI
-
-### Option 2: Internal Stage (Development Only)
-
-**Quick local testing without cloud storage**
-
-```sql
--- Create internal stage
-CREATE OR REPLACE STAGE SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL
-FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
-
--- Upload from local machine
-PUT file:///path/to/social_media_part_ad.csv @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
-
--- Load data
-COPY INTO SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW
-FROM @SAAS_ANALYTICS.BRONZE.RAW_STAGE_INTERNAL;
-```
-
-⚠️ **Note**: Internal stages are not recommended for production. Use external stages with storage integrations for enterprise deployments.
-
-3. **Verify Installation**
-   ```sql
-   SELECT COUNT(*) FROM SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW;
-   SELECT COUNT(*) FROM SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN;
-   SELECT * FROM SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS;
-   ```
+---
 
 ## Configuration
 
 ### Warehouse Settings
 - **Name**: SAAS_WH
 - **Size**: XSMALL (adjustable based on workload)
-- **Auto-Suspend**: 60 minutes
+- **Auto-Suspend**: 60 minutes (consider 5–10 min for dev/qa to reduce costs)
 - **Auto-Resume**: Enabled
-
-### Monitoring Schema Setup
-
-The data quality framework is automatically created when you run:
-```bash
-sql/00_database_setup/05_create_data_quality_schema.sql
-```
-
-This creates:
-- **MONITORING schema** with 6 tracking tables
-- **7 monitoring procedures** for quality checks
-- **8 monitoring views** for dashboards and alerts
-- **5 automated monitoring tasks** for continuous monitoring
-- **Enhanced procedures** with built-in SLA and error tracking
-
-**Deploy Monitoring (after core setup):**
-```bash
-# Run in order
-sql/07_data_quality/00_create_dq_procedures.sql
-sql/07_data_quality/01_create_dq_views.sql
-sql/07_data_quality/02_create_monitoring_tasks.sql
-sql/07_data_quality/03_enhanced_procedures_with_logging.sql
-```
 
 ### Task Schedule
 - **Frequency**: Hourly (CRON: `0 * * * * UTC`)
@@ -406,12 +470,16 @@ sql/07_data_quality/03_enhanced_procedures_with_logging.sql
 | NULL_PERCENTAGE_MONITORING | Every 15 min | Null value tracking |
 | CLEANUP_OLD_LOGS | Weekly (Sun 4 AM) | Archive old data |
 
+---
+
 ## Data Quality & Validation
 
 - **TRY_TO_* Functions**: All type conversions use safe functions to prevent load failures
 - **NULL Handling**: Conversion failures result in NULL values (no data loss)
 - **Metadata Tracking**: All records include source_file_name and load_timestamp for audit trails
 - **Incremental Loading**: Change Data Capture prevents duplicate processing
+
+---
 
 ## Current Status
 
@@ -429,19 +497,24 @@ sql/07_data_quality/03_enhanced_procedures_with_logging.sql
    - 5 automated monitoring tasks
    - Enhanced procedures with SLA tracking and detailed logging
 
+---
+
 ## Deployment History
 
-- **v1.0** - Initial medallion architecture with Bronze/Silver/Gold layers
-- **v2.0** - Added environment-aware deployment (dev/qa/prod)
-- **v2.1** - Refactored Gold layer: CTAS → MERGE pattern (94% cost reduction)
-- **v3.0** - Data Quality & Monitoring Framework (Production-grade monitoring, error tracking, SLA management)
-- **Current** - Production-ready with multi-environment support and comprehensive monitoring
+| Version | Changes |
+|---------|---------|
+| v1.0 | Initial medallion architecture with Bronze/Silver/Gold layers |
+| v2.0 | Added environment-aware deployment (dev/qa/prod) |
+| v2.1 | Refactored Gold layer: CTAS → MERGE pattern (94% cost reduction) |
+| v3.0 | Data Quality & Monitoring Framework (production-grade monitoring, error tracking, SLA management) |
+
+---
 
 ## Next Steps
 
-1. **Deploy Data Quality Framework** - Run sql/07_data_quality/ scripts
+1. **Deploy Data Quality Framework** - Run scripts in `sql/07_data_quality/` in order
 2. **Verify Monitoring** - Check MONITORING schema views for real-time metrics
 3. **Configure Alerts** - Integrate with your notification system (email, Slack, etc.)
 4. **Load Data** - Upload `data/social_media_part_ad.csv` to S3 or use internal stage
 5. **Monitor Dashboards** - Use the 8 monitoring views to track pipeline health
-6. **Scale to QA/Prod** - Use `python3 deployment/deploy.py qa` and `prod` commands
+6. **Scale to QA/Prod** - Use `python3 deployment/deploy.py qa` and `python3 deployment/deploy.py prod`
