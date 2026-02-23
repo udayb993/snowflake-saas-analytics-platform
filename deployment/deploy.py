@@ -60,6 +60,10 @@ class SnowflakeDeployer:
         ('sql/06_governance/00_create_governance_tables.sql', 'Creating governance tables'),
         ('sql/06_governance/01_row_access_policies.sql', 'Creating row access policies'),
         ('sql/06_governance/02_masking_policies.sql', 'Creating masking policies'),
+        ('sql/06_governance/03_insert_role_tenant_mapping.sql', 'Inserting role-tenant mappings'),
+
+        # dashboard secure views setup
+        ('sql/07_dashboard/00_create_dashboard_views.sql', 'Creating dashboard views'),
     ]
     
     def __init__(self, environment: str):
