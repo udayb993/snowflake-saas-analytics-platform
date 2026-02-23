@@ -7,10 +7,21 @@ WITH
     AUTO_RESUME = TRUE
     INITIALLY_SUSPENDED = TRUE;
 
+
 -- ====================================================================================
--- GRANT USAGE ON WAREHOUSE TO ROLES
+-- GRANT USAGE ON WAREHOUSE TO FUNCTIONAL ROLES
 -- ====================================================================================
--- Grant warehouse usage to custom roles
+
 GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE ANALYST_ROLE;
 GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE QA_ROLE;
 GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE DEVELOPER_ROLE;
+
+
+-- ====================================================================================
+-- WAREHOUSE USAGE — DASHBOARD VIEWER ROLES
+-- ====================================================================================
+
+GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE SOCIAL_DASHBOARD_AMERICAS_VIEWER;
+GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE SOCIAL_DASHBOARD_EUROPE_VIEWER;
+GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE SOCIAL_DASHBOARD_ASIA_PACIFIC_VIEWER;
+GRANT USAGE ON WAREHOUSE SAAS_WH TO ROLE SOCIAL_DASHBOARD_AUSTRALIA_VIEWER;
