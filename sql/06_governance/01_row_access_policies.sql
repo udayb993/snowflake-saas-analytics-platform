@@ -39,25 +39,17 @@ ALTER TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN
 -- ====================================================================================
 
 CREATE OR REPLACE ROW ACCESS POLICY SAAS_ANALYTICS.GOVERNANCE.TENANT_RLS
-AS (TENANT_ID STRING) RETURNS BOOLEAN ->
+AS (P_TENANT_ID STRING) RETURNS BOOLEAN ->
 
     -- Full-access roles: bypass tenant filtering entirely
     CURRENT_ROLE() IN ('SYSADMIN', 'ANALYST_ROLE', 'DEVELOPER_ROLE')
 
     -- Regional dashboard viewer roles: scoped to their mapped tenant_ids
-    OR (
-        CURRENT_ROLE() IN (
-            'SOCIAL_DASHBOARD_AMERICAS_VIEWER',
-            'SOCIAL_DASHBOARD_EUROPE_VIEWER',
-            'SOCIAL_DASHBOARD_ASIA_PACIFIC_VIEWER',
-            'SOCIAL_DASHBOARD_AUSTRALIA_VIEWER'
-        )
-        AND EXISTS (
-            SELECT 1
-            FROM SAAS_ANALYTICS.GOVERNANCE.ROLE_TENANT_MAPPING
-            WHERE role_name = CURRENT_ROLE()
-              AND tenant_id = TENANT_ID
-        )
+    OR EXISTS (
+        SELECT 1
+          FROM SAAS_ANALYTICS.GOVERNANCE.ROLE_TENANT_MAPPING
+         WHERE role_name = CURRENT_ROLE()
+           AND tenant_id = P_TENANT_ID
     );
 
 
