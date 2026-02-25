@@ -27,7 +27,6 @@ roles:
   - QA_ROLE
   - DEVELOPER_ROLE
 
-# Tenants (same across environments)
 # AWS Storage Integration Configuration (environment-specific)
 storage_integration:
   dev:
