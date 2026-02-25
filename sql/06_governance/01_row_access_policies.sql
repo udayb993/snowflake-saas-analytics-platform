@@ -30,8 +30,15 @@ USE ROLE SYSADMIN;
 -- Required because Snowflake won't drop or replace a policy that is still applied.
 -- Comment out on first-time setup (policy won't exist yet).
 
-ALTER TABLE SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN
-    DROP ROW ACCESS POLICY SAAS_ANALYTICS.GOVERNANCE.TENANT_RLS;
+-- Note: the EXCEPTION block is needed to catch and ignore the "policy doesn't exist" error 
+EXECUTE IMMEDIATE $$
+    BEGIN
+        ALTER TABLE SAAS_ANALYTICS_DEV.SILVER.SOCIAL_MEDIA_USERS_CLEAN
+            DROP ROW ACCESS POLICY SAAS_ANALYTICS_DEV.GOVERNANCE.TENANT_RLS;
+    EXCEPTION
+        WHEN STATEMENT_ERROR CONTINUE THEN RETURN SQLERRM;
+    END;
+$$;
 
 
 -- ====================================================================================
