@@ -29,7 +29,7 @@ AS (VAL NUMBER)
 RETURNS NUMBER ->
 CASE
     WHEN CURRENT_ROLE() IN ('ANALYST_ROLE') THEN VAL
-    ELSE -999  -- can't return a string like '***MASKED***' for a NUMBER, so NULL is the convention
+    ELSE NULL  -- can't return a string like '***MASKED***' for a NUMBER, so NULL is the convention
 END;
 
 -- Apply STRING masking policy to numeric health columns
