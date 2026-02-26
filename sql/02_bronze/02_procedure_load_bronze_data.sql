@@ -3,8 +3,7 @@ USE ROLE SYSADMIN;
 -- ====================================================================================
 -- STORED PROCEDURE: LOAD_BRONZE_DATA
 -- ====================================================================================
--- This procedure loads data from the external S3 stage into the bronze layer
--- Reads all 58 columns from CSV files and adds metadata tracking
+-- Loads data from S3 stage into bronze layer with simple error logging
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.BRONZE.LOAD_BRONZE_DATA()
@@ -13,6 +12,10 @@ LANGUAGE SQL
 AS
 $$
 BEGIN
+    -- Log start
+    LET v_run_id INT := (CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('LOAD_BRONZE_DATA'));
+
+    -- Load data
     COPY INTO SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_RAW
     FROM (
         SELECT
@@ -27,7 +30,15 @@ BEGIN
         FROM @SAAS_ANALYTICS.BRONZE.RAW_STAGE/SOCIAL_MEDIA_USERS_RAW/
     )
     FILE_FORMAT = SAAS_ANALYTICS.COMMON.CSV_FORMAT;
-
-    RETURN 'SUCCESSFUL';
+    
+    -- Log success
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(v_run_id);
+    
+    RETURN 'SUCCESS';
+    
+EXCEPTION
+    WHEN STATEMENT_ERROR THEN
+        CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_FAILED(v_run_id, SQLCODE, SQLERRM);
+        RETURN 'FAILED: ' || SQLERRM;
 END;
 $$;
