@@ -14,7 +14,7 @@ DECLARE
     v_run_id INT;
 BEGIN
     -- Use SEQUENCE for thread-safe ID generation
-    SET v_run_id = SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_ID_SEQ.NEXTVAL;
+    SELECT SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_ID_SEQ.NEXTVAL INTO :v_run_id;
     
     INSERT INTO SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_HISTORY 
         (run_id, procedure_name, status, start_timestamp) 
