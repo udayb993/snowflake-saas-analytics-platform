@@ -3,56 +3,46 @@ USE ROLE SYSADMIN;
 -- ====================================================================================
 -- STORED PROCEDURE: TRANSFORM_BRONZE_TO_SILVER
 -- ====================================================================================
--- This procedure transforms data from Bronze to Silver layer
--- Reads from SOCIAL_MEDIA_USERS_STREAM (CDC stream) for incremental processing
--- Applies data type conversions and business logic
+-- Transforms data from Bronze to Silver layer with simple error logging
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.SILVER.TRANSFORM_BRONZE_TO_SILVER()
-RETURNS TABLE (
-    ROWS_INSERTED NUMBER,
-    ROWS_UPDATED NUMBER,
-    STATUS VARCHAR
-)
+RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_run_id INT DEFAULT NULL;
 BEGIN
-    -- MERGE for SCD1: Update existing records or insert new ones
+    -- Log start
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO v_run_id;
+    
+    -- MERGE: Transform Bronze to Silver
     MERGE INTO SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN tgt
     USING (
         SELECT
             user_id,
             app_name,
-
             TRY_TO_NUMBER(age) AS age,
             gender,
             country,
-
             UPPER(country) AS tenant_id,
-
             urban_rural,
             income_level,
             employment_status,
             education_level,
             relationship_status,
-
             TRY_TO_BOOLEAN(has_children) AS has_children,
-
             TRY_TO_NUMBER(exercise_hours_per_week) AS exercise_hours_per_week,
             TRY_TO_NUMBER(sleep_hours_per_night) AS sleep_hours_per_night,
-
             diet_quality,
             smoking,
             alcohol_frequency,
-
             TRY_TO_NUMBER(perceived_stress_score) AS perceived_stress_score,
             TRY_TO_NUMBER(self_reported_happiness) AS self_reported_happiness,
             TRY_TO_NUMBER(body_mass_index) AS body_mass_index,
-
             TRY_TO_NUMBER(blood_pressure_systolic) AS blood_pressure_systolic,
             TRY_TO_NUMBER(blood_pressure_diastolic) AS blood_pressure_diastolic,
-
             TRY_TO_NUMBER(daily_steps_count) AS daily_steps_count,
             TRY_TO_NUMBER(weekly_work_hours) AS weekly_work_hours,
             TRY_TO_NUMBER(hobbies_count) AS hobbies_count,
@@ -60,61 +50,41 @@ BEGIN
             TRY_TO_NUMBER(books_read_per_year) AS books_read_per_year,
             TRY_TO_NUMBER(volunteer_hours_per_month) AS volunteer_hours_per_month,
             TRY_TO_NUMBER(travel_frequency_per_year) AS travel_frequency_per_year,
-
             TRY_TO_NUMBER(daily_active_minutes_instagram) AS daily_active_minutes_instagram,
             TRY_TO_NUMBER(sessions_per_day) AS sessions_per_day,
             TRY_TO_NUMBER(posts_created_per_week) AS posts_created_per_week,
             TRY_TO_NUMBER(reels_watched_per_day) AS reels_watched_per_day,
             TRY_TO_NUMBER(stories_viewed_per_day) AS stories_viewed_per_day,
-
             TRY_TO_NUMBER(likes_given_per_day) AS likes_given_per_day,
             TRY_TO_NUMBER(comments_written_per_day) AS comments_written_per_day,
             TRY_TO_NUMBER(dms_sent_per_week) AS dms_sent_per_week,
             TRY_TO_NUMBER(dms_received_per_week) AS dms_received_per_week,
-
             TRY_TO_NUMBER(ads_viewed_per_day) AS ads_viewed_per_day,
             TRY_TO_NUMBER(ads_clicked_per_day) AS ads_clicked_per_day,
-
             TRY_TO_NUMBER(time_on_feed_per_day) AS time_on_feed_per_day,
             TRY_TO_NUMBER(time_on_explore_per_day) AS time_on_explore_per_day,
             TRY_TO_NUMBER(time_on_messages_per_day) AS time_on_messages_per_day,
             TRY_TO_NUMBER(time_on_reels_per_day) AS time_on_reels_per_day,
-
             TRY_TO_NUMBER(followers_count) AS followers_count,
             TRY_TO_NUMBER(following_count) AS following_count,
-
             TRY_TO_BOOLEAN(uses_premium_features) AS uses_premium_features,
-
             TRY_TO_NUMBER(notification_response_rate) AS notification_response_rate,
             TRY_TO_NUMBER(account_creation_year) AS account_creation_year,
-
             TRY_TO_DATE(last_login_date) AS last_login_date,
-
             TRY_TO_NUMBER(average_session_length_minutes) AS average_session_length_minutes,
-
             content_type_preference,
             preferred_content_theme,
             privacy_setting_level,
-
             TRY_TO_BOOLEAN(two_factor_auth_enabled) AS two_factor_auth_enabled,
             TRY_TO_BOOLEAN(biometric_login_used) AS biometric_login_used,
-
             TRY_TO_NUMBER(linked_accounts_count) AS linked_accounts_count,
-
             subscription_status,
-
             TRY_TO_NUMBER(user_engagement_score) AS user_engagement_score,
-
             load_timestamp
-
         FROM SAAS_ANALYTICS.BRONZE.SOCIAL_MEDIA_USERS_STREAM
     ) src
-
     ON tgt.user_id = src.user_id
-
-
     WHEN MATCHED THEN UPDATE SET
-
         app_name = src.app_name,
         age = src.age,
         gender = src.gender,
@@ -174,10 +144,7 @@ BEGIN
         subscription_status = src.subscription_status,
         user_engagement_score = src.user_engagement_score,
         load_timestamp = src.load_timestamp
-
-
     WHEN NOT MATCHED THEN INSERT VALUES (
-
         src.user_id,
         src.app_name,
         src.age,
@@ -238,19 +205,18 @@ BEGIN
         src.subscription_status,
         src.user_engagement_score,
         src.load_timestamp
-
-    );
-
-    -- Get count of rows loaded from COPY command result
-    LET rows_loaded RESULTSET := (
-        SELECT "number of rows inserted" AS ROWS_INSERTED,
-               "number of rows updated" AS ROWS_UPDATED,
-               'SUCCESSFUL'::VARCHAR AS STATUS  
-          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
     );
     
-    -- Return summary
-    RETURN TABLE (rows_loaded);
+    -- Log success
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(v_run_id);
     
+    RETURN 'SUCCESS';
+    
+EXCEPTION
+    WHEN STATEMENT_ERROR THEN
+        IF v_run_id IS NOT NULL THEN
+            CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_FAILED(v_run_id, SQLCODE, SQLERRM);
+        END IF;
+        RETURN 'FAILED: ' || SQLERRM;
 END;
 $$;

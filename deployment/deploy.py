@@ -30,6 +30,8 @@ class SnowflakeDeployer:
         ('sql/00_database_setup/02_create_database.sql', 'Creating database'),
         ('sql/00_database_setup/03_create_schemas.sql', 'Creating schemas'),
         ('sql/00_database_setup/04_create_warehouse.sql', 'Creating warehouse'),
+        ('sql/00_database_setup/05_create_logging_tables.sql', 'Creating logging tables'),
+        ('sql/00_database_setup/06_create_logging_procedures.sql', 'Creating logging procedures'),
         
         # Ingestion Setup
         ('sql/01_ingestion_setup/00_create_storage_integration.sql', 'Setting up storage integration'),
