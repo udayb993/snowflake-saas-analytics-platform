@@ -14,7 +14,7 @@ All schemas, roles, tables, and procedures remain the same across environments. 
 
 ## Quick Start
 
-### Option 1: Python Script (Recommended) ✅
+### Python Script (Recommended) ✅
 
 ```bash
 # Dry-run (preview what will be deployed)
@@ -28,19 +28,6 @@ python3 deploy.py qa
 
 # Deploy to prod environment (requires confirmation)
 python3 deploy.py prod
-```
-
-### Option 2: Bash Script
-
-```bash
-# Deploy to dev
-./deploy.sh dev
-
-# Deploy to qa
-./deploy.sh qa
-
-# Deploy to prod (requires confirmation)
-./deploy.sh prod
 ```
 
 ---
@@ -275,8 +262,7 @@ snow connection add --name snowflake_saas
 
 ### Issue: Permission Denied
 ```bash
-# Make scripts executable
-chmod +x deploy.sh
+# Make script executable
 chmod +x deploy.py
 ```
 
@@ -288,7 +274,6 @@ chmod +x deploy.py
 snowflake-saas-analytics-platform/
 ├── config/
 │   └── environment.yml          (environment config)
-├── deploy.sh                    (bash deployment script)
 ├── deploy.py                    (Python deployment script - recommended)
 ├── sql/
 │   ├── 00_database_setup/       (database, schemas, roles)
