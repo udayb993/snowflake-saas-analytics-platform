@@ -31,7 +31,6 @@ snowflake-saas-analytics-platform/
 ├── deployment/                          Deployment scripts & configuration
 │   ├── DEPLOYMENT.md                    Comprehensive deployment documentation
 │   ├── deploy.py                        Main deployment script (Python - RECOMMENDED)
-│   ├── deploy.sh                        Bash deployment alternative
 │   └── config/
 │       └── environment.yml              Environment configuration (dev/qa/prod)
 │
@@ -41,7 +40,9 @@ snowflake-saas-analytics-platform/
 │   │   ├── 02_create_database.sql
 │   │   ├── 03_create_schemas.sql
 │   │   ├── 04_create_warehouse.sql
-│   │   └── 05_create_data_quality_schema.sql     🆕 Data quality & monitoring infrastructure
+│   │   ├── 05_create_logging_tables.sql
+│   │   ├── 06_create_logging_procedures.sql
+│   │   └── 08_create_data_quality_schema.sql
 │   │
 │   ├── 01_ingestion_setup/
 │   │   ├── 00_create_storage_integration.sql
@@ -51,25 +52,33 @@ snowflake-saas-analytics-platform/
 │   ├── 02_bronze/
 │   │   ├── 00_create_bronze_tables.sql
 │   │   ├── 01_create_bronze_streams.sql
-│   │   ├── 02_procedure_load_bronze_data.sql
-│   │   └── 03_create_daily_load_task.sql
+│   │   └── 02_procedure_load_bronze_data.sql
 │   │
 │   ├── 03_silver/
 │   │   ├── 00_create_silver_tables.sql
 │   │   ├── 01_create_silver_streams.sql
-│   │   ├── 02_procedure_bronze_to_silver.sql
-│   │   └── 03_task_bronze_to_silver.sql
+│   │   └── 02_procedure_bronze_to_silver.sql
 │   │
 │   ├── 04_gold/
-│   │   ├── create_metrics_tables.sql
-│   │   ├── 01_procedure_silver_to_gold.sql
-│   │   └── 02_task_gold_metrics.sql
+│   │   ├── 00_create_metrics_tables.sql
+│   │   └── 01_procedure_silver_to_gold.sql
 │   │
-│   ├── 05_governance/
-│   │   ├── masking_policies.sql
-│   │   └── row_access_policies.sql
+│   ├── 05_orchestration/
+│   │   ├── 00_task_daily_load_bronze.sql
+│   │   ├── 01_task_bronze_to_silver.sql
+│   │   ├── 02_task_gold_metrics.sql
+│   │   └── 03_resume_tasks.sql
 │   │
-│   └── 07_data_quality/                 🆕 Data Quality & Monitoring Framework
+│   ├── 06_governance/
+│   │   ├── 00_create_governance_tables.sql
+│   │   ├── 01_row_access_policies.sql
+│   │   ├── 02_masking_policies.sql
+│   │   └── 03_insert_role_tenant_mapping.sql
+│   │
+│   ├── 07_dashboard/
+│   │   └── 00_create_dashboard_views.sql
+│   │
+│   └── 08_data_quality/                 Data Quality & Monitoring Framework
 │       ├── 00_create_dq_procedures.sql
 │       ├── 01_create_dq_views.sql
 │       ├── 02_create_monitoring_tasks.sql
@@ -78,8 +87,6 @@ snowflake-saas-analytics-platform/
 ├── data/
 │   └── social_media_part_ad.csv         Sample dataset (58 columns, Instagram analytics)
 │
-├── DATA_QUALITY_IMPLEMENTATION.md
-├── QUICK_START_DATA_QUALITY.md
 └── README.md                            This file
 ```
 
@@ -146,7 +153,9 @@ sql/00_database_setup/01_create_roles.sql
 sql/00_database_setup/02_create_database.sql
 sql/00_database_setup/03_create_schemas.sql
 sql/00_database_setup/04_create_warehouse.sql
-sql/00_database_setup/05_create_data_quality_schema.sql   -- Optional: only needed for monitoring framework
+sql/00_database_setup/05_create_logging_tables.sql
+sql/00_database_setup/06_create_logging_procedures.sql
+sql/00_database_setup/08_create_data_quality_schema.sql
 ```
 
 ### Step 2 — Ingestion Setup
@@ -171,8 +180,6 @@ sql/02_bronze/01_create_bronze_streams.sql
 
 -- Upload CSV to S3 first (see Setup Instructions below), then run this
 sql/02_bronze/02_procedure_load_bronze_data.sql
-
-sql/02_bronze/03_create_daily_load_task.sql
 ```
 
 ### Step 4 — Silver Layer
@@ -181,31 +188,46 @@ sql/02_bronze/03_create_daily_load_task.sql
 sql/03_silver/00_create_silver_tables.sql
 sql/03_silver/01_create_silver_streams.sql
 sql/03_silver/02_procedure_bronze_to_silver.sql
-sql/03_silver/03_task_bronze_to_silver.sql
 ```
 
 ### Step 5 — Gold Layer
 
 ```sql
-sql/04_gold/create_metrics_tables.sql
+sql/04_gold/00_create_metrics_tables.sql
 sql/04_gold/01_procedure_silver_to_gold.sql
-sql/04_gold/02_task_gold_metrics.sql
 ```
 
-### Step 6 — Governance
+### Step 6 — Orchestration (Tasks)
 
 ```sql
-sql/05_governance/masking_policies.sql
-sql/05_governance/row_access_policies.sql
+sql/05_orchestration/00_task_daily_load_bronze.sql
+sql/05_orchestration/01_task_bronze_to_silver.sql
+sql/05_orchestration/02_task_gold_metrics.sql
+sql/05_orchestration/03_resume_tasks.sql
 ```
 
-### Step 7 — Data Quality & Monitoring (Optional but Recommended)
+### Step 7 — Governance
 
 ```sql
-sql/07_data_quality/00_create_dq_procedures.sql
-sql/07_data_quality/01_create_dq_views.sql
-sql/07_data_quality/02_create_monitoring_tasks.sql
-sql/07_data_quality/03_enhanced_procedures_with_logging.sql
+sql/06_governance/00_create_governance_tables.sql
+sql/06_governance/01_row_access_policies.sql
+sql/06_governance/02_masking_policies.sql
+sql/06_governance/03_insert_role_tenant_mapping.sql
+```
+
+### Step 8 — Dashboard Views
+
+```sql
+sql/07_dashboard/00_create_dashboard_views.sql
+```
+
+### Step 9 — Data Quality & Monitoring (Optional but Recommended)
+
+```sql
+sql/08_data_quality/00_create_dq_procedures.sql
+sql/08_data_quality/01_create_dq_views.sql
+sql/08_data_quality/02_create_monitoring_tasks.sql
+sql/08_data_quality/03_enhanced_procedures_with_logging.sql
 ```
 
 ### Verify Installation
@@ -512,7 +534,7 @@ The framework automatically:
 
 ## Next Steps
 
-1. **Deploy Data Quality Framework** - Run scripts in `sql/07_data_quality/` in order
+1. **Deploy Data Quality Framework** - Run scripts in `sql/08_data_quality/` in order
 2. **Verify Monitoring** - Check MONITORING schema views for real-time metrics
 3. **Configure Alerts** - Integrate with your notification system (email, Slack, etc.)
 4. **Load Data** - Upload `data/social_media_part_ad.csv` to S3 or use internal stage

@@ -15,6 +15,9 @@ CREATE SEQUENCE IF NOT EXISTS SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_ID_SEQ
 -- Tracks procedure execution with start and end timestamps
 -- ====================================================================================
 
+-- USE CREATE HYBRID TABLE for creating a hybrid table 
+-- (snowflake trail account doesn't have this option)
+
 CREATE TABLE IF NOT EXISTS SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_HISTORY (
     run_id              INT PRIMARY KEY DEFAULT SAAS_ANALYTICS.ORCHESTRATION.PIPELINE_RUN_ID_SEQ.NEXTVAL,
     procedure_name      VARCHAR(500) NOT NULL,
