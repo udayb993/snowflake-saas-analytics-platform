@@ -12,7 +12,9 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_run_id INT DEFAULT NULL;
+    v_run_id        INT DEFAULT NULL;
+    v_rows_inserted INT DEFAULT NULL;
+    v_rows_updated  INT DEFAULT NULL;
 BEGIN
     -- Log start
     CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
@@ -206,10 +208,19 @@ BEGIN
         src.user_engagement_score,
         src.load_timestamp
     );
+
+    SELECT "number of rows inserted", "number of rows updated"
+     INTO :v_rows_inserted, :v_rows_updated
+     FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
     
     -- Log success
-    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(:v_run_id);
-    
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(
+        :v_run_id,
+        :v_rows_inserted + :v_rows_updated,
+        :v_rows_inserted,
+        :v_rows_updated
+    );
+
     RETURN 'SUCCESS';
     
 EXCEPTION
