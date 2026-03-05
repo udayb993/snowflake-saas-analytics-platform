@@ -15,16 +15,19 @@ USE ROLE SYSADMIN;
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_TENANT_ENGAGEMENT_METRICS()
-RETURNS TABLE (
-    ROWS_INSERTED NUMBER,
-    ROWS_UPDATED NUMBER,
-    STATUS VARCHAR
-)
+RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_run_id        INT DEFAULT NULL;
+    v_rows_inserted INT DEFAULT NULL;
+    v_rows_updated  INT DEFAULT NULL;
 BEGIN
-    -- MERGE into tenant engagement metrics table
+   -- Log start
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    
+     -- MERGE into tenant engagement metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS tgt
     USING (
         SELECT
@@ -73,18 +76,25 @@ BEGIN
             src.active_subscriptions,
             CURRENT_TIMESTAMP()
         );
-    
-    -- Get count of rows loaded from COPY command result
-    LET rows_loaded RESULTSET := (
-        SELECT "number of rows inserted" AS ROWS_INSERTED,
-               "number of rows updated" AS ROWS_UPDATED,
-               'SUCCESSFUL'::VARCHAR AS STATUS  
-          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
-    );
-    
-    -- Return summary
-    RETURN TABLE (rows_loaded);
 
+    SELECT "number of rows inserted", "number of rows updated"
+     INTO :v_rows_inserted, :v_rows_updated
+     FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+    
+    -- Log success
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(
+        :v_run_id,
+        :v_rows_inserted + :v_rows_updated,
+        :v_rows_inserted,
+        :v_rows_updated
+    );
+
+    RETURN 'SUCCESS';
+    
+EXCEPTION
+    WHEN STATEMENT_ERROR THEN
+        CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_FAILED(:v_run_id, :SQLCODE, :SQLERRM);
+        RETURN 'FAILED: ' || SQLERRM;
 END;
 $$;
 
@@ -96,14 +106,18 @@ $$;
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_USER_ENGAGEMENT_SNAPSHOT()
-RETURNS TABLE (
-    ROWS_INSERTED NUMBER,
-    STATUS VARCHAR
-)
+RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_run_id        INT DEFAULT NULL;
+    v_rows_inserted INT DEFAULT NULL;
+    v_rows_updated  INT DEFAULT NULL;
 BEGIN
+   -- Log start
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    
     -- Insert today's user engagement snapshot
     INSERT INTO SAAS_ANALYTICS.GOLD.USER_ENGAGEMENT_SNAPSHOT (
         user_id,
@@ -135,16 +149,26 @@ BEGIN
         FROM SAAS_ANALYTICS.GOLD.USER_ENGAGEMENT_SNAPSHOT
         WHERE user_id = SAAS_ANALYTICS.SILVER.SOCIAL_MEDIA_USERS_CLEAN.user_id
     );
+
+
+    SELECT "number of rows inserted", "number of rows updated"
+     INTO :v_rows_inserted, :v_rows_updated
+     FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
     
-    -- Get count of rows loaded from COPY command result
-    LET rows_loaded RESULTSET := (
-        SELECT "number of rows inserted" AS ROWS_INSERTED,
-               'SUCCESSFUL'::VARCHAR AS STATUS  
-          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+    -- Log success
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(
+        :v_run_id,
+        :v_rows_inserted + :v_rows_updated,
+        :v_rows_inserted,
+        :v_rows_updated
     );
+
+    RETURN 'SUCCESS';
     
-    -- Return summary
-    RETURN TABLE (rows_loaded);
+EXCEPTION
+    WHEN STATEMENT_ERROR THEN
+        CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_FAILED(:v_run_id, :SQLCODE, :SQLERRM);
+        RETURN 'FAILED: ' || SQLERRM;
 
 END;
 $$;
@@ -157,15 +181,18 @@ $$;
 -- ====================================================================================
 
 CREATE OR REPLACE PROCEDURE SAAS_ANALYTICS.GOLD.LOAD_CONTENT_PERFORMANCE_METRICS()
-RETURNS TABLE (
-    ROWS_INSERTED NUMBER,
-    ROWS_UPDATED NUMBER,
-    STATUS VARCHAR
-)
+RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_run_id        INT DEFAULT NULL;
+    v_rows_inserted INT DEFAULT NULL;
+    v_rows_updated  INT DEFAULT NULL;
 BEGIN
+   -- Log start
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    
     -- MERGE into content performance metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.CONTENT_PERFORMANCE_METRICS tgt
     USING (
@@ -212,17 +239,26 @@ BEGIN
             src.snapshot_date,
             CURRENT_TIMESTAMP()
         );
+
+
+    SELECT "number of rows inserted", "number of rows updated"
+     INTO :v_rows_inserted, :v_rows_updated
+     FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
     
-    -- Get count of rows loaded from COPY command result
-    LET rows_loaded RESULTSET := (
-        SELECT "number of rows inserted" AS ROWS_INSERTED,
-               "number of rows updated" AS ROWS_UPDATED,
-               'SUCCESSFUL'::VARCHAR AS STATUS  
-          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+    -- Log success
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(
+        :v_run_id,
+        :v_rows_inserted + :v_rows_updated,
+        :v_rows_inserted,
+        :v_rows_updated
     );
+
+    RETURN 'SUCCESS';
     
-    -- Return summary
-    RETURN TABLE (rows_loaded);
+EXCEPTION
+    WHEN STATEMENT_ERROR THEN
+        CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_FAILED(:v_run_id, :SQLCODE, :SQLERRM);
+        RETURN 'FAILED: ' || SQLERRM;
 
 END;
 $$;
