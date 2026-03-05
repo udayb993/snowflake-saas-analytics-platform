@@ -25,7 +25,7 @@ DECLARE
     v_rows_updated  INT DEFAULT NULL;
 BEGIN
    -- Log start
-    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('LOAD_TENANT_ENGAGEMENT_METRICS') INTO :v_run_id;
     
      -- MERGE into tenant engagement metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.TENANT_ENGAGEMENT_METRICS tgt
@@ -113,10 +113,9 @@ $$
 DECLARE
     v_run_id        INT DEFAULT NULL;
     v_rows_inserted INT DEFAULT NULL;
-    v_rows_updated  INT DEFAULT NULL;
 BEGIN
    -- Log start
-    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('LOAD_USER_ENGAGEMENT_SNAPSHOT') INTO :v_run_id;
     
     -- Insert today's user engagement snapshot
     INSERT INTO SAAS_ANALYTICS.GOLD.USER_ENGAGEMENT_SNAPSHOT (
@@ -151,16 +150,16 @@ BEGIN
     );
 
 
-    SELECT "number of rows inserted", "number of rows updated"
-     INTO :v_rows_inserted, :v_rows_updated
+    SELECT "number of rows inserted"
+     INTO :v_rows_inserted
      FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
     
     -- Log success
     CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_SUCCESS(
         :v_run_id,
-        :v_rows_inserted + :v_rows_updated,
         :v_rows_inserted,
-        :v_rows_updated
+        :v_rows_inserted,
+        NULL
     );
 
     RETURN 'SUCCESS';
@@ -191,7 +190,7 @@ DECLARE
     v_rows_updated  INT DEFAULT NULL;
 BEGIN
    -- Log start
-    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('TRANSFORM_BRONZE_TO_SILVER') INTO :v_run_id;
+    CALL SAAS_ANALYTICS.ORCHESTRATION.LOG_START('LOAD_CONTENT_PERFORMANCE_METRICS') INTO :v_run_id;
     
     -- MERGE into content performance metrics table
     MERGE INTO SAAS_ANALYTICS.GOLD.CONTENT_PERFORMANCE_METRICS tgt
